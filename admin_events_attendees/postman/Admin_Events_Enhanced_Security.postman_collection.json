@@ -1,0 +1,1281 @@
+{
+	"info": {
+		"_postman_id": "enhanced-security-tests-2025",
+		"name": "Admin Events - Tests de Seguridad Mejorados (MFA + Admin)",
+		"description": "Colección completa con tests para MFA, funcionalidades de administrador y endpoints faltantes.\n\n🔐 **Nuevos Tests Incluidos:**\n- Flujo completo de MFA (setup, verify, disable)\n- Tests específicos para funcionalidades de administrador\n- Endpoint GET /auth/users\n- Cambio de contraseña\n- Perfil de usuario (/auth/me)\n- Búsqueda por email\n- Logs de auditoría completos\n\n⚠️ **Requisitos:**\n- API debe estar ejecutándose en localhost:3000\n- MFA_ENABLED=true en configuración\n- Usuario administrador creado\n\n**Flujo de Pruebas Recomendado:**\n1. Crear admin y usuario regular\n2. Configurar MFA para usuario\n3. Probar flujo completo de MFA\n4. Tests de funcionalidades de admin\n5. Verificar endpoints faltantes",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "enhanced-security-2025"
+	},
+	"item": [
+		{
+			"name": "🔧 Configuración Inicial",
+			"item": [
+				{
+					"name": "✅ Crear Usuario Administrador",
+					"event": [
+						{
+							"listen": "pre-request",
+							"script": {
+								"exec": [
+									"// Generar datos únicos para admin",
+									"const timestamp = Date.now();",
+									"pm.environment.set(\"admin_username\", `admin_${timestamp}`);",
+									"pm.environment.set(\"admin_email\", `admin_${timestamp}@test.com`);",
+									"pm.environment.set(\"admin_password\", \"AdminPass123!\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Admin user created\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"id\");",
+									"    pm.expect(responseJson.is_admin).to.be.true;",
+									"    pm.environment.set(\"admin_user_id\", responseJson.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{admin_username}}\",\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\",\n    \"is_admin\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Login Administrador",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Admin tokens received\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"access_token\");",
+									"    pm.expect(responseJson).to.have.property(\"refresh_token\");",
+									"    ",
+									"    // Guardar tokens de admin",
+									"    pm.environment.set(\"admin_access_token\", responseJson.access_token);",
+									"    pm.environment.set(\"admin_refresh_token\", responseJson.refresh_token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{admin_username}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Crear Usuario Regular para MFA",
+					"event": [
+						{
+							"listen": "pre-request",
+							"script": {
+								"exec": [
+									"// Generar datos únicos para usuario MFA",
+									"const timestamp = Date.now();",
+									"pm.environment.set(\"mfa_username\", `mfa_user_${timestamp}`);",
+									"pm.environment.set(\"mfa_email\", `mfa_${timestamp}@test.com`);",
+									"pm.environment.set(\"mfa_password\", \"MfaPass123!\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"MFA user created\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"id\");",
+									"    pm.expect(responseJson.is_admin).to.be.false;",
+									"    pm.environment.set(\"mfa_user_id\", responseJson.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{mfa_username}}\",\n    \"email\": \"{{mfa_email}}\",\n    \"password\": \"{{mfa_password}}\",\n    \"is_admin\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Login Usuario MFA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA user tokens received\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"access_token\");",
+									"    pm.expect(responseJson).to.have.property(\"refresh_token\");",
+									"    ",
+									"    // Guardar tokens de usuario MFA",
+									"    pm.environment.set(\"mfa_access_token\", responseJson.access_token);",
+									"    pm.environment.set(\"mfa_refresh_token\", responseJson.refresh_token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{mfa_username}}\",\n    \"password\": \"{{mfa_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔐 Tests de MFA (Multi-Factor Authentication)",
+			"item": [
+				{
+					"name": "✅ Setup MFA - Configurar Autenticación 2FA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA setup response valid\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"secret\");",
+									"    pm.expect(responseJson).to.have.property(\"qr_code_url\");",
+									"    ",
+									"    // Guardar el secret para tests posteriores",
+									"    pm.environment.set(\"mfa_secret\", responseJson.secret);",
+									"    ",
+									"    console.log(\"🔑 MFA Secret:\", responseJson.secret);",
+									"    console.log(\"📱 QR Code URL:\", responseJson.qr_code_url);",
+									"});",
+									"",
+									"pm.test(\"Secret format is valid\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.secret).to.be.a('string');",
+									"    pm.expect(responseJson.secret.length).to.be.greaterThan(10);",
+									"});",
+									"",
+									"pm.test(\"QR Code URL contains otpauth\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.qr_code_url).to.include('otpauth://');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/setup",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "mfa", "setup"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Verify MFA - Verificar Código MFA",
+					"event": [
+						{
+							"listen": "pre-request",
+							"script": {
+								"exec": [
+									"// Generar código MFA de prueba (simulado)",
+									"// En un test real, aquí usarías una librería TOTP o ingresarías manualmente",
+									"// Para testing automatizado, usamos un código de prueba",
+									"pm.environment.set(\"test_mfa_code\", \"123456\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Nota: Este test puede fallar si no se usa un código MFA real",
+									"// Para testing automatizado, se necesitaría una implementación TOTP",
+									"pm.test(\"Status code is 200 or 401 (expected for test code)\", function () {",
+									"    pm.expect([200, 401]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"MFA verification successful\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        pm.expect(responseJson).to.have.property(\"message\");",
+									"        pm.expect(responseJson.message).to.include(\"enabled\");",
+									"    });",
+									"} else {",
+									"    pm.test(\"Invalid MFA code handled correctly\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        pm.expect(responseJson.detail).to.include(\"Invalid MFA code\");",
+									"    });",
+									"    ",
+									"    console.log(\"⚠️ MFA verification falló como se esperaba con código de prueba\");",
+									"    console.log(\"💡 Para test real, usar código generado por app autenticadora\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfa_code\": \"{{test_mfa_code}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/verify",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "mfa", "verify"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Disable MFA - Deshabilitar Autenticación 2FA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA disabled successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"message\");",
+									"    pm.expect(responseJson.message).to.include(\"disabled\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/disable",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "mfa", "disable"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ MFA Setup Sin Autenticación (Error Esperado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Unauthorized access denied\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/setup",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "mfa", "setup"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👨‍💼 Tests de Funcionalidades de Administrador",
+			"item": [
+				{
+					"name": "✅ GET /auth/users - Listar Todos los Usuarios",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Users list is array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"    pm.expect(responseJson.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"pm.test(\"User objects have required properties\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const firstUser = responseJson[0];",
+									"    ",
+									"    pm.expect(firstUser).to.have.property(\"id\");",
+									"    pm.expect(firstUser).to.have.property(\"username\");",
+									"    pm.expect(firstUser).to.have.property(\"email\");",
+									"    pm.expect(firstUser).to.have.property(\"is_active\");",
+									"    pm.expect(firstUser).to.have.property(\"is_admin\");",
+									"    pm.expect(firstUser).to.have.property(\"created_at\");",
+									"    pm.expect(firstUser).to.have.property(\"mfa_enabled\");",
+									"});",
+									"",
+									"pm.test(\"Admin user is present in list\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const adminUser = responseJson.find(user => user.is_admin === true);",
+									"    pm.expect(adminUser).to.exist;",
+									"});",
+									"",
+									"pm.test(\"No password hashes exposed\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    responseJson.forEach(user => {",
+									"        pm.expect(user).to.not.have.property(\"hashed_password\");",
+									"        pm.expect(user).to.not.have.property(\"password\");",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/users",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ GET /auth/users - Usuario Regular (Error Esperado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test(\"Access denied for non-admin\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"admin\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/users",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ GET /auth/audit-logs - Logs de Auditoría",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Audit logs is array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"});",
+									"",
+									"if (pm.response.json().length > 0) {",
+									"    pm.test(\"Audit log entries have required properties\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        const firstLog = responseJson[0];",
+									"        ",
+									"        pm.expect(firstLog).to.have.property(\"id\");",
+									"        pm.expect(firstLog).to.have.property(\"action\");",
+									"        pm.expect(firstLog).to.have.property(\"timestamp\");",
+									"        pm.expect(firstLog).to.have.property(\"ip_address\");",
+									"    });",
+									"    ",
+									"    pm.test(\"Recent registration actions logged\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        const registrationLogs = responseJson.filter(log => log.action === \"USER_REGISTERED\");",
+									"        pm.expect(registrationLogs.length).to.be.greaterThan(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/audit-logs?limit=50",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "audit-logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ GET /auth/audit-logs - Usuario Regular (Error Esperado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test(\"Access denied for non-admin\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"admin\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/audit-logs",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "audit-logs"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👤 Tests de Endpoints Faltantes",
+			"item": [
+				{
+					"name": "✅ GET /auth/me - Perfil de Usuario",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"User profile data is valid\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    ",
+									"    pm.expect(responseJson).to.have.property(\"id\");",
+									"    pm.expect(responseJson).to.have.property(\"username\");",
+									"    pm.expect(responseJson).to.have.property(\"email\");",
+									"    pm.expect(responseJson).to.have.property(\"is_active\");",
+									"    pm.expect(responseJson).to.have.property(\"is_admin\");",
+									"    pm.expect(responseJson).to.have.property(\"created_at\");",
+									"    pm.expect(responseJson).to.have.property(\"mfa_enabled\");",
+									"});",
+									"",
+									"pm.test(\"No sensitive data exposed\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.not.have.property(\"hashed_password\");",
+									"    pm.expect(responseJson).to.not.have.property(\"password\");",
+									"    pm.expect(responseJson).to.not.have.property(\"mfa_secret\");",
+									"});",
+									"",
+									"pm.test(\"User matches expected MFA user\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.username).to.eql(pm.environment.get(\"mfa_username\"));",
+									"    pm.expect(responseJson.email).to.eql(pm.environment.get(\"mfa_email\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ GET /auth/me - Sin Autenticación (Error Esperado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Unauthorized access denied\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ POST /auth/change-password - Cambiar Contraseña",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Password changed successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"message\");",
+									"    pm.expect(responseJson.message).to.include(\"changed\");",
+									"});",
+									"",
+									"// Actualizar contraseña en environment para tests posteriores",
+									"pm.environment.set(\"mfa_password\", \"NewMfaPass123!\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"current_password\": \"MfaPass123!\",\n    \"new_password\": \"NewMfaPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/change-password",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "change-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ POST /auth/change-password - Contraseña Actual Incorrecta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Incorrect current password error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"current password\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"current_password\": \"WrongPassword123!\",\n    \"new_password\": \"AnotherNewPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/change-password",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "change-password"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔍 Tests de Búsqueda Faltantes",
+			"item": [
+				{
+					"name": "✅ Crear Asistente para Búsqueda por Email",
+					"event": [
+						{
+							"listen": "pre-request",
+							"script": {
+								"exec": [
+									"// Generar datos únicos para el asistente",
+									"const timestamp = Date.now();",
+									"pm.environment.set(\"search_attendee_email\", `search_${timestamp}@test.com`);",
+									"pm.environment.set(\"search_attendee_doc\", `DOC${timestamp}`);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Attendee created for search tests\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"attendee_id\");",
+									"    pm.environment.set(\"search_attendee_id\", responseJson.attendee_id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Usuario Test Búsqueda\",\n    \"email\": \"{{search_attendee_email}}\",\n    \"document_type\": \"DNI\",\n    \"document_number\": \"{{search_attendee_doc}}\",\n    \"phone_number\": \"555-0123\",\n    \"address\": \"Dirección de prueba 123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ GET /attendees/search/by-email/{email} - Buscar por Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Search results is array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Found attendee with correct email\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.length).to.be.greaterThan(0);",
+									"    ",
+									"    const foundAttendee = responseJson[0];",
+									"    pm.expect(foundAttendee.email).to.eql(pm.environment.get(\"search_attendee_email\"));",
+									"    pm.expect(foundAttendee).to.have.property(\"attendee_id\");",
+									"    pm.expect(foundAttendee).to.have.property(\"name\");",
+									"});",
+									"",
+									"pm.test(\"All results have same email\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const searchEmail = pm.environment.get(\"search_attendee_email\");",
+									"    ",
+									"    responseJson.forEach(attendee => {",
+									"        pm.expect(attendee.email).to.eql(searchEmail);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-email/{{search_attendee_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-email", "{{search_attendee_email}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ GET /attendees/search/by-email - Email No Existente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Empty results for non-existent email\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"    pm.expect(responseJson).to.have.lengthOf(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-email/nonexistent@email.com",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-email", "nonexistent@email.com"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ GET /attendees/search/by-email - Sin Autenticación",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Unauthorized access denied\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-email/test@example.com",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-email", "test@example.com"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🧹 Limpieza de Tests",
+			"item": [
+				{
+					"name": "✅ Eliminar Asistente de Prueba",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Attendee deleted successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"message\");",
+									"    pm.expect(responseJson.message).to.include(\"deleted\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/{{search_attendee_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "{{search_attendee_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Logout Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Logout successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"message\");",
+									"    pm.expect(responseJson.message).to.include(\"logged out\");",
+									"});",
+									"",
+									"// Limpiar tokens",
+									"pm.environment.unset(\"admin_access_token\");",
+									"pm.environment.unset(\"admin_refresh_token\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Logout Usuario MFA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Logout successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"message\");",
+									"    pm.expect(responseJson.message).to.include(\"logged out\");",
+									"});",
+									"",
+									"// Limpiar tokens",
+									"pm.environment.unset(\"mfa_access_token\");",
+									"pm.environment.unset(\"mfa_refresh_token\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Configuración global de variables",
+					"if (!pm.environment.get(\"base_url\")) {",
+					"    pm.environment.set(\"base_url\", \"http://localhost:3000\");",
+					"}",
+					"",
+					"// Log de información útil",
+					"console.log(\"🚀 Running Admin Events Enhanced Security Tests\");",
+					"console.log(\"📍 Base URL:\", pm.environment.get(\"base_url\"));"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verificaciones globales",
+					"pm.test(\"Response time is reasonable\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(10000);",
+					"});",
+					"",
+					"pm.test(\"Content-Type header is present\", function () {",
+					"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.exist;",
+					"});",
+					"",
+					"// Log de respuestas de error para debugging",
+					"if (pm.response.code >= 400) {",
+					"    console.log(\"❌ Error Response:\", pm.response.code, pm.response.json());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}

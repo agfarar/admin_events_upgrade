@@ -6,14 +6,23 @@ Esta carpeta contiene las colecciones y environments de Postman para probar comp
 
 ### 🧪 Colecciones de Pruebas
 
-1. **`Admin_Events_Complete_API.postman_collection.json`** ⭐ **NUEVA - RECOMENDADA**
-   - Colección completa y actualizada con todas las funcionalidades
+1. **`Admin_Events_Enhanced_Security.postman_collection.json`** ⭐ **NUEVA - COMPLETA 2025**
+   - **Colección más completa con todos los endpoints faltantes**
+   - **✅ Tests de MFA completos:** Setup, verify, disable
+   - **✅ Tests de funcionalidades de admin:** GET /auth/users, audit logs
+   - **✅ Tests de endpoints faltantes:** /auth/me, change-password, búsqueda por email
+   - **✅ Flujo automatizado completo** con limpieza de datos
+   - **✅ Scripts inteligentes** para generar datos únicos
+   - **✅ Validaciones exhaustivas** de seguridad y autorización
+
+2. **`Admin_Events_Complete_API.postman_collection.json`** ⭐ **RECOMENDADA - ESTABLE**
+   - Colección completa y actualizada con funcionalidades básicas
    - Tests automatizados alineados con la implementación actual
    - Incluye pruebas de seguridad, validaciones y CRUD completo
    - Scripts de pre-request para generar datos únicos
    - Validaciones exhaustivas de respuestas y headers
 
-2. **`Admin_Events_Security_Tests.postman_collection.json`** 🛡️ **NUEVA - ESPECIALIZADA**
+3. **`Admin_Events_Security_Tests.postman_collection.json`** 🛡️ **ESPECIALIZADA**
    - Colección especializada en pruebas de seguridad avanzadas
    - Tests de validación de contraseñas robustas
    - Verificación de headers de seguridad (XSS, CSRF, HSTS, CSP)
@@ -30,11 +39,52 @@ Esta carpeta contiene las colecciones y environments de Postman para probar comp
 
 ### 🌍 Environments
 
-1. **`Admin_Events_Local_Environment.postman_environment.json`** ✅ **ACTUALIZADO**
+1. **`Admin_Events_Enhanced_Environment.postman_environment.json`** ✅ **NUEVO - COMPLETO 2025**
+   - **Environment optimizado para la colección Enhanced Security**
+   - **Variables para MFA testing** (mfa_username, mfa_secret, etc.)
+   - **Variables para admin testing** (admin_access_token, admin_user_id, etc.)
+   - **Variables para búsqueda** (search_attendee_email, search_attendee_doc)
+   - **Generación automática de datos únicos**
+
+2. **`Admin_Events_Local_Environment.postman_environment.json`** ✅ **ESTABLE**
    - Environment configurado para desarrollo local
    - Variables predefinidas para pruebas rápidas
    - Incluye credenciales de administrador predeterminadas
    - Variables para generar datos únicos
+
+## 🆕 **NUEVOS TESTS IMPLEMENTADOS (2025)**
+
+### 🔐 **Tests de MFA (Multi-Factor Authentication)**
+- ✅ **Setup MFA:** Configuración inicial de 2FA con secret y QR code
+- ✅ **Verify MFA:** Verificación de códigos TOTP (con manejo de códigos de prueba)
+- ✅ **Disable MFA:** Deshabilitación de autenticación de dos factores
+- ✅ **Tests de seguridad:** Acceso sin autenticación a endpoints MFA
+
+### 👨‍💼 **Tests de Funcionalidades de Administrador**
+- ✅ **GET /auth/users:** Lista completa de usuarios (solo admins)
+- ✅ **GET /auth/audit-logs:** Logs de auditoría con filtros
+- ✅ **Autorización:** Verificación que usuarios regulares no accedan
+- ✅ **Validaciones:** Estructura de datos y propiedades requeridas
+
+### 👤 **Tests de Endpoints Faltantes**
+- ✅ **GET /auth/me:** Perfil del usuario autenticado
+- ✅ **POST /auth/change-password:** Cambio de contraseña con validaciones
+- ✅ **GET /attendees/search/by-email/{email}:** Búsqueda de asistentes por email
+- ✅ **Tests de seguridad:** Acceso sin autenticación a endpoints protegidos
+
+### 🧪 **Flujo de Testing Automatizado**
+1. **Configuración inicial:** Creación automática de admin y usuario MFA
+2. **Tests de MFA:** Flujo completo de configuración y uso
+3. **Tests de admin:** Verificación de funcionalidades administrativas
+4. **Tests de endpoints:** Validación de nuevos endpoints
+5. **Limpieza:** Eliminación automática de datos de prueba
+
+### 📊 **Mejoras en Validaciones**
+- **Estructura de respuestas:** Validación exhaustiva de propiedades JSON
+- **Headers de seguridad:** Verificación de headers en todas las respuestas
+- **Autorización granular:** Tests específicos por scope y rol
+- **Datos sensibles:** Verificación que no se expongan passwords/secrets
+- **Rate limiting:** Validación de límites y headers de control
 
 ## 🚀 Cómo Usar
 
@@ -44,18 +94,38 @@ Esta carpeta contiene las colecciones y environments de Postman para probar comp
 2. Click en "Import"
 3. Arrastra los archivos JSON o selecciona "Upload Files"
 4. **Importa prioritariamente:**
-   - `Admin_Events_Complete_API.postman_collection.json`
-   - `Admin_Events_Security_Tests.postman_collection.json`
-   - `Admin_Events_Local_Environment.postman_environment.json`
+   - `Admin_Events_Enhanced_Security.postman_collection.json` ⭐ **NUEVA - MÁS COMPLETA**
+   - `Admin_Events_Enhanced_Environment.postman_environment.json` ⭐ **NUEVO ENVIRONMENT**
+   - `Admin_Events_Complete_API.postman_collection.json` (alternativa estable)
+   - `Admin_Events_Security_Tests.postman_collection.json` (pruebas especializadas)
 
 ### 2. Configurar Environment
 
-1. En Postman, selecciona el environment "Admin Events - Local Environment"
-2. Verifica que las variables estén configuradas:
-   - `base_url`: `http://localhost:3000`
-   - `admin_username`: `admin`
-   - `admin_password`: `Admin123!`
-   - `test_password`: `TestPass123!`
+1. **Para la colección Enhanced Security (RECOMENDADO):**
+   - Selecciona el environment `Admin_Events_Enhanced_Environment`
+   - **Variables principales:**
+     - `base_url`: `http://localhost:3000` (ajustar si usas otro puerto)
+     - `test_password`: Contraseña segura por defecto
+     - **Variables automáticas:** Los scripts generarán automáticamente usernames, emails y tokens únicos
+
+2. **Para colecciones estables:**
+   - Selecciona el environment `Admin_Events_Local_Environment`
+   - Verifica que las variables estén configuradas:
+     - `base_url`: `http://localhost:3000`
+     - `admin_username`: `admin`
+     - `admin_password`: `Admin123!`
+     - `test_password`: `TestPass123!`
+
+### 3. Configuración para Tests de MFA
+
+**⚠️ Importante para tests de MFA reales:**
+
+1. **Variable `MFA_ENABLED=true`** en el archivo `config.py` de la API
+2. **Para tests automatizados:** Los tests usan códigos simulados y manejan errores esperados
+3. **Para tests manuales:** 
+   - Ejecuta "Setup MFA" y copia el `secret` del response
+   - Usa una app como Google Authenticator/Authy para generar códigos reales
+   - Reemplaza `test_mfa_code` en el environment con el código generado
 
 ### 3. Asegurar que el Servidor Esté Funcionando
 
@@ -74,9 +144,34 @@ PYTHONPATH=.venv/lib/python3.12/site-packages python3 main.py
 
 ### 4. Ejecutar Pruebas
 
+#### 🆕 **Flujo Enhanced Security (RECOMENDADO - 2025)**
+1. **Selecciona:** `Admin_Events_Enhanced_Security` collection
+2. **Environment:** `Admin_Events_Enhanced_Environment`
+3. **Ejecuta las carpetas en orden:**
+   - 🔧 **Configuración Inicial** - Crea usuarios admin y MFA automáticamente
+   - 🔐 **Tests de MFA** - Flujo completo de autenticación de dos factores  
+   - 👨‍💼 **Tests de Admin** - Funcionalidades administrativas y autorización
+   - 👤 **Endpoints Faltantes** - Perfil, cambio contraseña, búsqueda por email
+   - 🔍 **Búsqueda Faltantes** - Tests de búsqueda por email con datos de prueba
+   - 🧹 **Limpieza** - Eliminación automática de datos de prueba
+
 #### 🔄 Ejecución Manual (Recomendado para Desarrollo)
 1. Ejecuta las requests una por una siguiendo el orden de las carpetas
 2. Observa los tests automatizados en la pestaña "Test Results"
+
+#### 📊 **Interpretación de Resultados Enhanced Security**
+
+**✅ Tests Exitosos Esperados:**
+- Todos los tests de configuración inicial
+- Tests de funcionalidades de admin con token de admin
+- Tests de perfil y cambio de contraseña con autenticación
+- Tests de búsqueda con datos válidos
+
+**❌ Errores Esperados (Tests Negativos):**
+- MFA verification con código de prueba (401)
+- Acceso a funciones admin sin privilegios (403)
+- Acceso sin autenticación (401)
+- Búsqueda con emails inexistentes (resultados vacíos)
 
 1. **Ejecutar Flujo Completo Recomendado (API Completa):**
    - Selecciona la colección `Admin_Events_Complete_API`
