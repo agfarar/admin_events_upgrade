@@ -1,0 +1,583 @@
+{
+	"info": {
+		"_postman_id": "security-tests-2025-collection",
+		"name": "Admin Events - Pruebas de Seguridad Avanzadas",
+		"description": "Colección especializada para probar exhaustivamente las características de seguridad del microservicio.\n\n🛡️ **Pruebas de Seguridad Incluidas:**\n- Validaciones de contraseña (longitud, complejidad)\n- Inyección SQL en campos de entrada\n- Headers de seguridad (XSS, CSRF, Clickjacking)\n- Rate limiting y protección contra ataques de fuerza bruta\n- Autorización y control de acceso\n- Validación de tokens JWT\n- Sanitización de datos de entrada\n- Manejo seguro de errores\n\n⚠️ **IMPORTANTE:**\n- Estas pruebas están diseñadas para un entorno de desarrollo/testing\n- NO ejecutar en producción sin autorización\n- Algunas pruebas intentan vulnerabilidades intencionalmente\n\n**Base URL:** http://localhost:3000",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🔐 Validaciones de Contraseña",
+			"item": [
+				{
+					"name": "❌ Contraseña muy corta (< 8 chars)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Password length validation\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"ensure this value has at least 8 characters\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"test_short\",\n    \"email\": \"short@test.com\",\n    \"password\": \"123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "❌ Contraseña sin mayúsculas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Uppercase validation\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"uppercase letter\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"test_noupper\",\n    \"email\": \"noupper@test.com\",\n    \"password\": \"testpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "❌ Contraseña sin números",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Digit validation\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"digit\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"test_nodigit\",\n    \"email\": \"nodigit@test.com\",\n    \"password\": \"TestPassword\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🛡️ Headers de Seguridad",
+			"item": [
+				{
+					"name": "✅ Verificar Headers XSS Protection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"XSS Protection header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-xss-protection\")).to.include(\"1; mode=block\");",
+									"});",
+									"",
+									"pm.test(\"Content-Type-Options header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-content-type-options\")).to.eql(\"nosniff\");",
+									"});",
+									"",
+									"pm.test(\"Frame-Options header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-frame-options\")).to.eql(\"DENY\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "✅ Verificar HSTS y CSP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"HSTS header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"strict-transport-security\")).to.include(\"max-age=31536000\");",
+									"});",
+									"",
+									"pm.test(\"CSP header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"content-security-policy\")).to.include(\"default-src 'self'\");",
+									"});",
+									"",
+									"pm.test(\"Referrer Policy header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"referrer-policy\")).to.eql(\"strict-origin-when-cross-origin\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🚦 Rate Limiting",
+			"item": [
+				{
+					"name": "✅ Headers de Rate Limit",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Rate limit headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-limit\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-remaining\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-reset\")).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Rate limit is 100 per minute\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-limit\")).to.eql(\"100\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "🔄 Múltiples Requests Rápidas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response is valid (200 or 429)\", function () {",
+									"    pm.expect([200, 429]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 429) {",
+									"    pm.test(\"Rate limit exceeded response\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        pm.expect(responseJson.detail).to.include(\"Rate limit exceeded\");",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔑 Seguridad de Tokens JWT",
+			"item": [
+				{
+					"name": "❌ Token Malformado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Invalid token error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Could not validate credentials\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer invalid.token.here"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					}
+				},
+				{
+					"name": "❌ Token Vacío",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Authentication required\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer "
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					}
+				},
+				{
+					"name": "❌ Sin Header Authorization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Not authenticated error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💉 Validación de Datos de Entrada",
+			"item": [
+				{
+					"name": "❌ SQL Injection en Nombre",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 or 422\", function () {",
+									"    pm.expect([401, 422]).to.include(pm.response.code);",
+									"});",
+									"",
+									"// Si llegamos aquí sin token, debería ser 401",
+									"// Si tenemos token, debería rechazar la entrada maliciosa"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"'; DROP TABLE attendees; --\",\n    \"email\": \"hacker@test.com\",\n    \"document_type\": \"DNI\",\n    \"document_number\": \"12345678\",\n    \"phone_number\": \"555-1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					}
+				},
+				{
+					"name": "❌ XSS en Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Email validation error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"value is not a valid email address\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test XSS\",\n    \"email\": \"<script>alert('xss')</script>@test.com\",\n    \"document_type\": \"DNI\",\n    \"document_number\": \"87654321\",\n    \"phone_number\": \"555-4321\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					}
+				},
+				{
+					"name": "❌ Campos Excesivamente Largos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Field length validation\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"ensure this value has at most\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"A\".repeat(500),\n    \"email\": \"toolong@test.com\",\n    \"document_type\": \"DNI\",\n    \"document_number\": \"12345678\",\n    \"phone_number\": \"555-1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔍 Auditoría y Logging",
+			"item": [
+				{
+					"name": "✅ Verificar Process Time Header",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Process time header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-process-time\")).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Process time is reasonable\", function () {",
+									"    const processTime = parseFloat(pm.response.headers.get(\"x-process-time\"));",
+									"    pm.expect(processTime).to.be.below(5.0); // Menos de 5 segundos",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Configuración de variables si no existen",
+					"if (!pm.environment.get(\"base_url\")) {",
+					"    pm.environment.set(\"base_url\", \"http://localhost:3000\");",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Tests globales de seguridad",
+					"pm.test(\"Response time is reasonable (security)\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(10000);",
+					"});",
+					"",
+					"pm.test(\"No server information leak\", function () {",
+					"    // Verificar que no se revele información del servidor",
+					"    pm.expect(pm.response.headers.get(\"server\")).to.not.include(\"Python\");",
+					"    pm.expect(pm.response.headers.get(\"server\")).to.not.include(\"FastAPI\");",
+					"});"
+				]
+			}
+		}
+	]
+}

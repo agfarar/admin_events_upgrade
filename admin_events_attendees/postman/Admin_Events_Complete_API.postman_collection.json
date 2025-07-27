@@ -1,0 +1,924 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Admin Events - API Completa y Segura",
+		"description": "Colección completa y actualizada para probar el microservicio de gestión de asistentes con todas las funcionalidades de seguridad implementadas.\n\n🔐 **Características de Seguridad Probadas:**\n- Autenticación JWT con tokens de acceso y refresh\n- Validaciones de contraseña robustas (8+ chars, mayúsculas, minúsculas, números)\n- Autorización basada en scopes (read:attendees, write:attendees)\n- Rate limiting (100 requests/minuto)\n- Headers de seguridad (XSS, CSRF, Content-Type)\n- Validaciones de datos estrictas\n- Auditoría de acciones\n\n📋 **Flujo de Pruebas Recomendado:**\n1. Health Check\n2. Registro con contraseña débil (Error esperado)\n3. Registro exitoso con contraseña segura\n4. Login con credenciales incorrectas (Error esperado)\n5. Login exitoso y obtención de tokens\n6. Acceso sin autenticación (Error esperado)\n7. CRUD completo de asistentes con autenticación\n8. Pruebas de validación de datos\n9. Pruebas de tokens inválidos\n10. Verificación de headers de seguridad\n\n**Base URL:** http://localhost:3000\n**Requiere:** Variables de entorno configuradas",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "🏥 Health & Status",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Health check response\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.status).to.eql(\"healthy\");",
+									"    pm.expect(responseJson.service).to.eql(\"attendees-microservice\");",
+									"});",
+									"",
+									"pm.test(\"Security headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-content-type-options\")).to.eql(\"nosniff\");",
+									"    pm.expect(pm.response.headers.get(\"x-frame-options\")).to.eql(\"DENY\");",
+									"    pm.expect(pm.response.headers.get(\"x-xss-protection\")).to.include(\"1; mode=block\");",
+									"});",
+									"",
+									"pm.test(\"Rate limiting headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-limit\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-remaining\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-reset\")).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "API Root Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"API info contains features\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.features).to.include(\"JWT Authentication\");",
+									"    pm.expect(responseJson.features).to.include(\"Rate Limiting\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔐 Autenticación y Seguridad",
+			"item": [
+				{
+					"name": "❌ Registro - Contraseña Débil (Error Esperado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 - Validation Error\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Password validation error message\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"ensure this value has at least 8 characters\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser_weak\",\n    \"email\": \"weak@test.com\",\n    \"password\": \"weak123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Registro - Contraseña Segura",
+					"event": [
+						{
+							"listen": "pre-request",
+							"script": {
+								"exec": [
+									"// Generar sufijo aleatorio para evitar duplicados",
+									"const randomSuffix = Math.floor(Math.random() * 100000);",
+									"pm.environment.set(\"random_suffix\", randomSuffix);",
+									"pm.environment.set(\"test_username\", `testuser_${randomSuffix}`);",
+									"pm.environment.set(\"test_email\", `test_${randomSuffix}@test.com`);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"User created successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"id\");",
+									"    pm.expect(responseJson).to.have.property(\"username\");",
+									"    pm.expect(responseJson.is_active).to.be.true;",
+									"    pm.expect(responseJson.is_admin).to.be.false;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Login - Credenciales Incorrectas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Error message for invalid credentials\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Incorrect username or password\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"password\": \"WrongPassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Login - Credenciales Correctas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"JWT tokens received\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"access_token\");",
+									"    pm.expect(responseJson).to.have.property(\"refresh_token\");",
+									"    pm.expect(responseJson).to.have.property(\"token_type\");",
+									"    pm.expect(responseJson.token_type).to.eql(\"bearer\");",
+									"    ",
+									"    // Guardar tokens para usar en otras requests",
+									"    pm.environment.set(\"access_token\", responseJson.access_token);",
+									"    pm.environment.set(\"refresh_token\", responseJson.refresh_token);",
+									"});",
+									"",
+									"pm.test(\"Security headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-content-type-options\")).to.eql(\"nosniff\");",
+									"    pm.expect(pm.response.headers.get(\"x-frame-options\")).to.eql(\"DENY\");",
+									"    pm.expect(pm.response.headers.get(\"x-xss-protection\")).to.include(\"1; mode=block\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Login Administrador",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Admin login successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"access_token\");",
+									"    pm.expect(responseJson).to.have.property(\"refresh_token\");",
+									"    ",
+									"    // Guardar tokens de admin",
+									"    pm.environment.set(\"access_token\", responseJson.access_token);",
+									"    pm.environment.set(\"refresh_token\", responseJson.refresh_token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{admin_username}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Acceso con Token Inválido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Invalid token error message\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Could not validate credentials\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer invalid_token_123"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👥 Gestión de Asistentes",
+			"item": [
+				{
+					"name": "❌ Listar Asistentes - Sin Autenticación",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 - Unauthorized\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Authentication required error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Listar Asistentes - Con Autenticación",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an(\"array\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Crear Asistente - Datos Inválidos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 - Validation Error\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Validation error for invalid enum\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"not a valid enumeration member\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@test.com\",\n    \"document_type\": \"INVALID\",\n    \"document_number\": \"123\",\n    \"phone_number\": \"555-1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Crear Asistente - Datos Válidos",
+					"event": [
+						{
+							"listen": "pre-request",
+							"script": {
+								"exec": [
+									"// Generar datos únicos para evitar duplicados",
+									"const timestamp = Date.now();",
+									"const randomDoc = `${timestamp}${Math.floor(Math.random() * 10000)}`;",
+									"pm.environment.set(\"unique_doc_number\", randomDoc);",
+									"pm.environment.set(\"unique_email\", `attendee_${timestamp}@test.com`);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 - Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Attendee created successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"attendee_id\");",
+									"    pm.expect(responseJson).to.have.property(\"name\");",
+									"    pm.expect(responseJson).to.have.property(\"email\");",
+									"    pm.expect(responseJson).to.have.property(\"document_type\");",
+									"    pm.expect(responseJson).to.have.property(\"created_at\");",
+									"    ",
+									"    // Guardar ID para usar en otras requests",
+									"    pm.environment.set(\"attendee_id\", responseJson.attendee_id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Juan Pérez Test\",\n    \"email\": \"{{unique_email}}\",\n    \"document_type\": \"DNI\",\n    \"document_number\": \"{{unique_doc_number}}\",\n    \"phone_number\": \"555-1234\",\n    \"address\": \"Calle Test 123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Obtener Asistente por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Attendee details returned\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"attendee_id\");",
+									"    pm.expect(responseJson.attendee_id).to.eql(parseInt(pm.environment.get(\"attendee_id\")));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/{{attendee_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "{{attendee_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Actualizar Asistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Attendee updated successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"attendee_id\");",
+									"    pm.expect(responseJson).to.have.property(\"updated_at\");",
+									"    pm.expect(responseJson.name).to.include(\"Actualizado\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Juan Pérez Test Actualizado\",\n    \"phone_number\": \"555-9999\",\n    \"address\": \"Nueva Dirección 456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/{{attendee_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "{{attendee_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Eliminar Asistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Attendee deleted successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"message\");",
+									"    pm.expect(responseJson.message).to.include(\"deleted\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/{{attendee_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "{{attendee_id}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📋 Validaciones de Datos",
+			"item": [
+				{
+					"name": "❌ Email Inválido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 - Validation Error\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Email validation error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"value is not a valid email address\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Invalid Email\",\n    \"email\": \"invalid-email\",\n    \"document_type\": \"DNI\",\n    \"document_number\": \"99999999\",\n    \"phone_number\": \"555-1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Campos Requeridos Faltantes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 - Validation Error\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Required field error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(JSON.stringify(responseJson)).to.include(\"field required\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Missing Fields\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendees/",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", ""]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔒 Pruebas de Seguridad Adicionales",
+			"item": [
+				{
+					"name": "📊 Verificar Headers de Seguridad",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All security headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-content-type-options\")).to.eql(\"nosniff\");",
+									"    pm.expect(pm.response.headers.get(\"x-frame-options\")).to.eql(\"DENY\");",
+									"    pm.expect(pm.response.headers.get(\"x-xss-protection\")).to.include(\"1; mode=block\");",
+									"    pm.expect(pm.response.headers.get(\"strict-transport-security\")).to.include(\"max-age=31536000\");",
+									"    pm.expect(pm.response.headers.get(\"referrer-policy\")).to.eql(\"strict-origin-when-cross-origin\");",
+									"    pm.expect(pm.response.headers.get(\"content-security-policy\")).to.include(\"default-src 'self'\");",
+									"});",
+									"",
+									"pm.test(\"Rate limiting headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-limit\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-remaining\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-reset\")).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Process time header present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-process-time\")).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "🚦 Test Rate Limiting (Múltiples Requests)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 429\", function () {",
+									"    pm.expect([200, 429]).to.include(pm.response.code);",
+									"});",
+									"",
+									"pm.test(\"Rate limit headers present\", function () {",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-limit\")).to.exist;",
+									"    pm.expect(pm.response.headers.get(\"x-ratelimit-remaining\")).to.exist;",
+									"});",
+									"",
+									"if (pm.response.code === 429) {",
+									"    pm.test(\"Rate limit exceeded message\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        pm.expect(responseJson.detail).to.include(\"Rate limit exceeded\");",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verificar que las variables de entorno estén configuradas",
+					"if (!pm.environment.get(\"base_url\")) {",
+					"    console.log(\"⚠️ Variable 'base_url' no configurada. Usando valor por defecto.\");",
+					"    pm.environment.set(\"base_url\", \"http://localhost:3000\");",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verificaciones globales en todas las respuestas",
+					"pm.test(\"Response time is reasonable\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test(\"Content-Type header is present\", function () {",
+					"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.exist;",
+					"});"
+				]
+			}
+		}
+	]
+}

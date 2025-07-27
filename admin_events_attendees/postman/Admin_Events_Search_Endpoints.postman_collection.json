@@ -1,0 +1,309 @@
+{
+	"info": {
+		"_postman_id": "search-endpoints-addon",
+		"name": "Admin Events - Endpoints de Búsqueda (Addon)",
+		"description": "Colección adicional con los endpoints de búsqueda específicos que complementan la colección principal.\n\n🔍 **Endpoints de Búsqueda Incluidos:**\n- Buscar asistente por documento (tipo + número)\n- Buscar asistentes por email\n\n📋 **Uso:**\n1. Primero ejecutar Login desde la colección principal\n2. Usar estos endpoints para búsquedas específicas\n3. Requiere autenticación JWT y scope read:attendees\n\n**Base URL:** http://localhost:3000",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🔍 Búsquedas Específicas",
+			"item": [
+				{
+					"name": "✅ Buscar por Documento (DNI)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect([200, 404]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Attendee found with correct document\", function () {",
+									"        const responseJson = pm.response.json();",
+									"        pm.expect(responseJson).to.have.property(\"attendee_id\");",
+									"        pm.expect(responseJson).to.have.property(\"document_type\");",
+									"        pm.expect(responseJson).to.have.property(\"document_number\");",
+									"        pm.expect(responseJson.document_type).to.eql(\"DNI\");",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-document/DNI/12345678",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-document", "DNI", "12345678"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Buscar por Documento - Documento Creado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Attendee found with matching document\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property(\"attendee_id\");",
+									"    pm.expect(responseJson.document_number).to.eql(pm.environment.get(\"unique_doc_number\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-document/DNI/{{unique_doc_number}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-document", "DNI", "{{unique_doc_number}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Buscar por Documento Inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Not found message\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-document/DNI/99999999",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-document", "DNI", "99999999"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Buscar por Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an(\"array\");",
+									"});",
+									"",
+									"pm.test(\"Found attendees have matching email pattern\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.length > 0) {",
+									"        responseJson.forEach(attendee => {",
+									"            pm.expect(attendee).to.have.property(\"email\");",
+									"            pm.expect(attendee.email).to.include(\"test.com\");",
+									"        });",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-email/test.com",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-email", "test.com"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Buscar por Email Específico - Email Creado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is array with at least one result\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an(\"array\");",
+									"    pm.expect(responseJson.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"pm.test(\"Found attendee has exact email match\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const expectedEmail = pm.environment.get(\"unique_email\");",
+									"    const foundAttendee = responseJson.find(attendee => attendee.email === expectedEmail);",
+									"    pm.expect(foundAttendee).to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-email/{{unique_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-email", "{{unique_email}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Buscar Sin Autenticación",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Authentication required error\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.detail).to.include(\"Not authenticated\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendees/search/by-document/DNI/12345678",
+							"host": ["{{base_url}}"],
+							"path": ["attendees", "search", "by-document", "DNI", "12345678"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verificar que las variables necesarias estén configuradas",
+					"if (!pm.environment.get(\"base_url\")) {",
+					"    pm.environment.set(\"base_url\", \"http://localhost:3000\");",
+					"}",
+					"",
+					"if (!pm.environment.get(\"access_token\")) {",
+					"    console.log(\"⚠️ Token de acceso no encontrado. Ejecuta primero el Login desde la colección principal.\");",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Tests globales",
+					"pm.test(\"Response time is reasonable\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test(\"Content-Type header is present\", function () {",
+					"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.exist;",
+					"});"
+				]
+			}
+		}
+	]
+}
