@@ -67,10 +67,6 @@ cd admin_events_upgrade/admin_events_attendees
 ./start.sh
 ```
 
-## Instrucciones de Ejecución
-
-Para obtener instrucciones detalladas sobre cómo ejecutar ambos componentes del sistema, consulte el archivo [INSTRUCCIONES_EJECUCION.md](./INSTRUCCIONES_EJECUCION.md).
-
 ## Enfoque de Modernización
 
 La estrategia de modernización implementada sigue un patrón "Strangler Fig" donde:
