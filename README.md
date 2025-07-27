@@ -117,7 +117,7 @@ El proyecto incluye un conjunto completo de colecciones de Postman para facilita
    - Incluye pruebas de seguridad, validaciones y CRUD completo
    - Scripts para generar datos únicos y validaciones exhaustivas
 
-3. **`Admin_Events_Security_Tests.postman_collection.json`** 🛡️
+3. **`Admin_Events_Security_Tests.postman_collection.json`**
    - Colección especializada en pruebas de seguridad avanzadas
    - Validación de contraseñas robustas y headers de seguridad
    - Tests de rate limiting y protección contra ataques
