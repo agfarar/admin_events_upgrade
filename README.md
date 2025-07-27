@@ -144,7 +144,7 @@ python main.py
 
 ```env
 # JWT Configuration (CAMBIAR EN PRODUCCIÓN)
-JWT_SECRET_KEY=tu-clave-super-secreta-cambiar-en-produccion
+JWT_SECRET_KEY=secret-key
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
