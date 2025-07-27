@@ -97,6 +97,64 @@ Las entidades principales gestionadas son:
 - **attendees_purchase**: Registro de compras
 - **attendees_ticket**: Tickets asignados a asistentes
 
+## Recursos de Testing - Colecciones de Postman
+
+El proyecto incluye un conjunto completo de colecciones de Postman para facilitar las pruebas del microservicio FastAPI, ubicadas en `/admin_events_attendees/postman/`. Estas colecciones permiten validar todas las funcionalidades de la API de manera automatizada.
+
+### Colecciones Principales
+
+1. **`Admin_Events_Enhanced_Security.postman_collection.json`** ⭐ **NUEVA - COMPLETA 2025**
+   - Colección más completa con todos los endpoints y funcionalidades actualizadas
+   - Tests de MFA (Multi-Factor Authentication) completos
+   - Tests de funcionalidades administrativas: gestión de usuarios y logs de auditoría
+   - Endpoints especializados: `/auth/me`, cambio de contraseña, búsqueda por email
+   - Flujo automatizado completo con limpieza de datos
+   - Validaciones exhaustivas de seguridad y autorización
+
+2. **`Admin_Events_Complete_API.postman_collection.json`** 📝 **RECOMENDADA - ESTABLE**
+   - Colección completa y estable con funcionalidades básicas
+   - Tests automatizados alineados con la implementación actual
+   - Incluye pruebas de seguridad, validaciones y CRUD completo
+   - Scripts para generar datos únicos y validaciones exhaustivas
+
+3. **`Admin_Events_Security_Tests.postman_collection.json`** 🛡️ **ESPECIALIZADA**
+   - Colección especializada en pruebas de seguridad avanzadas
+   - Validación de contraseñas robustas y headers de seguridad
+   - Tests de rate limiting y protección contra ataques
+   - Validación de tokens JWT y autorización
+   - Pruebas de seguridad para inyección SQL y XSS
+
+### Environments Disponibles
+
+- **`Admin_Events_Enhanced_Environment.postman_environment.json`**: Environment optimizado para la colección Enhanced Security con variables para MFA, testing de admin y búsquedas
+- **`Admin_Events_Local_Environment.postman_environment.json`**: Environment configurado para desarrollo local con variables predefinidas
+
+### Funcionalidades de Testing
+
+Las colecciones incluyen pruebas automatizadas para:
+- **Autenticación y autorización**: Login, logout, gestión de tokens JWT
+- **MFA (Multi-Factor Authentication)**: Configuración, verificación y deshabilitación de 2FA
+- **CRUD de asistentes**: Creación, lectura, actualización y eliminación
+- **Gestión de compras y tickets**: Operaciones completas del módulo
+- **Funcionalidades administrativas**: Gestión de usuarios y logs de auditoría
+- **Búsquedas especializadas**: Búsqueda de asistentes por email
+- **Seguridad**: Validación de headers, rate limiting, protección contra ataques
+- **Validación de datos**: Verificación de esquemas y respuestas de la API
+
+### Uso Rápido
+
+```bash
+# 1. Importar en Postman las colecciones y environments
+# 2. Configurar el environment apropiado (Enhanced o Local)
+# 3. Asegurar que el servidor esté funcionando
+cd admin_events_upgrade/admin_events_attendees
+./run.sh
+
+# 4. Ejecutar las pruebas desde Postman Collection Runner
+```
+
+Para más detalles sobre el uso específico de cada colección, consultar el archivo `/admin_events_attendees/postman/README.md`.
+
 ## Próximos Pasos en la Modernización
 
 - Migración gradual de otros módulos a microservicios según sea necesario.
