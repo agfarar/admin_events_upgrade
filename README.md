@@ -103,7 +103,7 @@ El proyecto incluye un conjunto completo de colecciones de Postman para facilita
 
 ### Colecciones Principales
 
-1. **`Admin_Events_Enhanced_Security.postman_collection.json`** ⭐ **NUEVA - COMPLETA 2025**
+1. **`Admin_Events_Enhanced_Security.postman_collection.json`**
    - Colección más completa con todos los endpoints y funcionalidades actualizadas
    - Tests de MFA (Multi-Factor Authentication) completos
    - Tests de funcionalidades administrativas: gestión de usuarios y logs de auditoría
@@ -111,13 +111,13 @@ El proyecto incluye un conjunto completo de colecciones de Postman para facilita
    - Flujo automatizado completo con limpieza de datos
    - Validaciones exhaustivas de seguridad y autorización
 
-2. **`Admin_Events_Complete_API.postman_collection.json`** 📝 **RECOMENDADA - ESTABLE**
+2. **`Admin_Events_Complete_API.postman_collection.json`** 
    - Colección completa y estable con funcionalidades básicas
    - Tests automatizados alineados con la implementación actual
    - Incluye pruebas de seguridad, validaciones y CRUD completo
    - Scripts para generar datos únicos y validaciones exhaustivas
 
-3. **`Admin_Events_Security_Tests.postman_collection.json`** 🛡️ **ESPECIALIZADA**
+3. **`Admin_Events_Security_Tests.postman_collection.json`** 🛡️
    - Colección especializada en pruebas de seguridad avanzadas
    - Validación de contraseñas robustas y headers de seguridad
    - Tests de rate limiting y protección contra ataques
