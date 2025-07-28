@@ -54,17 +54,11 @@ Este proyecto demuestra una estrategia de modernización de software para la apl
 git clone <url-del-repositorio>
 cd admin_events_upgrade/admin_events_attendees
 
-# 2. Configuración automática completa
-./setup.sh
-
-# 3. Crear usuario administrador
-./create_admin.sh
-
-# 4. Ejecutar tests de seguridad
-./run_tests.sh
-
-# 5. Iniciar servidor
+# 2. Iniciar servidor
 ./start.sh
+
+# 3. Ejecutar tests de seguridad
+./run_tests.sh
 ```
 
 ## Enfoque de Modernización
